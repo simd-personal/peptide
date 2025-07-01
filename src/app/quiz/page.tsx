@@ -55,6 +55,7 @@ export default function QuizPage() {
     healthConditions: [],
     acknowledgedSideEffects: false,
   });
+  const [addedPeptideId, setAddedPeptideId] = useState<string | null>(null);
 
   useEffect(() => {
     const loadPeptides = async () => {
@@ -194,6 +195,8 @@ export default function QuizPage() {
 
   const handleAddToCart = (peptide: Peptide) => {
     addItem(peptide);
+    setAddedPeptideId(peptide.id);
+    setTimeout(() => setAddedPeptideId(null), 900);
   };
 
   const renderStep = () => {
@@ -379,7 +382,7 @@ export default function QuizPage() {
             </p>
             <div className="space-y-4">
               {recommendations.map((peptide) => (
-                <div key={peptide.id} className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+                <div key={peptide.id} className="bg-white rounded-xl shadow p-6 mb-6">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="text-xl font-semibold text-black">{peptide.name}</h3>
@@ -387,26 +390,40 @@ export default function QuizPage() {
                         {peptide.use_case}
                       </span>
                     </div>
-                    <button
-                      onClick={() => handleAddToCart(peptide)}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Add to Cart</span>
-                    </button>
                   </div>
-                                     <p className="text-base text-black mb-4">{peptide.description}</p>
-                   <div className="grid grid-cols-2 gap-4 text-sm text-gray-500 mb-4">
-                     <div>
-                       <strong>Injection Site:</strong> {peptide.injection_site}
-                     </div>
-                     <div>
-                       <strong>Dosage:</strong> {peptide.dosage}
-                     </div>
-                   </div>
-                   <div className="text-lg font-bold text-black mb-4">
-                     ${peptide.price}
-                   </div>
+                  <p className="text-base text-black mb-4">{peptide.description}</p>
+                  <div className="grid grid-cols-2 gap-4 text-sm text-gray-500 mb-4">
+                    <div>
+                      <strong>Injection Site:</strong> {peptide.injection_site}
+                    </div>
+                    <div>
+                      <strong>Dosage:</strong> {peptide.dosage}
+                    </div>
+                  </div>
+                  <div className="text-lg font-bold text-black mb-4">
+                    ${peptide.price}
+                  </div>
+                  <button
+                    onClick={() => handleAddToCart(peptide)}
+                    className={`mt-4 px-5 py-2 rounded-lg font-semibold flex items-center gap-2 transition-all duration-300
+                      ${addedPeptideId === peptide.id
+                        ? 'bg-green-500 text-white scale-105 shadow-lg'
+                        : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95'}
+                    `}
+                    disabled={addedPeptideId === peptide.id}
+                  >
+                    {addedPeptideId === peptide.id ? (
+                      <>
+                        <Check className="w-5 h-5 animate-bounce" />
+                        Added!
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-5 h-5" />
+                        Add to Cart
+                      </>
+                    )}
+                  </button>
                 </div>
               ))}
             </div>

@@ -96,6 +96,11 @@ model Product {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   
+  // Stripe integration
+  stripeProductId           String?
+  stripeOneTimePriceId      String?
+  stripeSubscriptionPriceId String?
+  
   // Relations
   orderItems    OrderItem[]
   cartItems     CartItem[]

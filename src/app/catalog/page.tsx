@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Peptide } from '@/types';
 import { useCart } from '@/contexts/CartContext';
 import { Info, X, Plus, Search, Filter } from 'lucide-react';
@@ -16,6 +16,8 @@ export default function CatalogPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUseCase, setSelectedUseCase] = useState('');
   const { addItem } = useCart();
+  const [addedId, setAddedId] = useState<string | null>(null);
+  const addTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const useCases = [
     'Healing & Recovery',
@@ -82,6 +84,9 @@ export default function CatalogPage() {
 
   const handleAddToCart = (peptide: Peptide) => {
     addItem(peptide);
+    setAddedId(peptide.id);
+    if (addTimeout.current) clearTimeout(addTimeout.current);
+    addTimeout.current = setTimeout(() => setAddedId(null), 1200);
   };
 
   const handleMoreInfo = (peptide: Peptide) => {
@@ -212,10 +217,14 @@ export default function CatalogPage() {
                     <span className="text-2xl font-bold text-gray-900">${peptide.price}</span>
                     <button
                       onClick={() => handleAddToCart(peptide)}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                      className={`relative bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center space-x-2 transition-transform duration-200 ${addedId === peptide.id ? 'scale-105 ring-2 ring-green-400' : ''}`}
+                      disabled={addedId === peptide.id}
                     >
                       <Plus className="w-4 h-4" />
-                      <span>Add to Cart</span>
+                      <span>{addedId === peptide.id ? 'Added!' : 'Add to Cart'}</span>
+                      {addedId === peptide.id && (
+                        <span className="absolute -top-3 right-0 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full animate-bounce">✔</span>
+                      )}
                     </button>
                   </div>
                 </div>

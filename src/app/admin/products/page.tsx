@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Plus, Edit, Trash2, Eye, Upload, Save, X, Search } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 
@@ -51,6 +51,8 @@ export default function AdminProductsPage() {
     stockQuantity: 0,
     isActive: true,
   });
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const useCases = [
     'Healing & Recovery',
@@ -163,6 +165,21 @@ export default function AdminProductsPage() {
       isActive: true,
     });
     setEditingProduct(null);
+  };
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Save to /public/images/ (simulate upload in dev)
+    const fileName = `${Date.now()}_${file.name}`;
+    const imagePath = `/images/${fileName}`;
+    // For dev: use a FileReader for preview
+    const reader = new FileReader();
+    reader.onload = (ev) => setImagePreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+    setFormData((f) => ({ ...f, image: imagePath }));
+    // In production, you would upload the file to a server or S3 bucket here
+    // For local dev, you must manually copy the file to /public/images/
   };
 
   const filteredProducts = products.filter(product =>
@@ -453,16 +470,22 @@ export default function AdminProductsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Image URL
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Product Image</label>
                   <input
-                    type="url"
-                    value={formData.image || ''}
-                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                    type="file"
+                    accept="image/*"
+                    ref={fileInputRef}
+                    onChange={handleImageChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="https://example.com/image.jpg"
                   />
+                  {imagePreview || formData.image ? (
+                    <img
+                      src={imagePreview || formData.image}
+                      alt="Preview"
+                      className="mt-2 w-32 h-32 object-cover rounded-lg border"
+                    />
+                  ) : null}
+                  <p className="text-xs text-gray-500 mt-1">Upload a product image (JPG, PNG, etc.)</p>
                 </div>
 
                 <div className="flex items-center">

@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { sendOrderConfirmation } from '../email/route';
 import jwt from 'jsonwebtoken';
+import Stripe from 'stripe';
 
 const prisma = new PrismaClient();
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,98 +25,49 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create shipping address
-    const shippingAddressRecord = await prisma.address.create({
-      data: {
-        type: 'shipping',
-        firstName: shippingAddress.firstName,
-        lastName: shippingAddress.lastName,
-        company: shippingAddress.company,
-        address1: shippingAddress.address1,
-        address2: shippingAddress.address2,
-        city: shippingAddress.city,
-        state: shippingAddress.state,
-        postalCode: shippingAddress.postalCode,
-        country: shippingAddress.country,
-        phone: shippingAddress.phone,
-        userId: userId,
-      },
-    });
-
-    // Create billing address
-    const billingAddressRecord = await prisma.address.create({
-      data: {
-        type: 'billing',
-        firstName: billingAddress.firstName,
-        lastName: billingAddress.lastName,
-        company: billingAddress.company,
-        address1: billingAddress.address1,
-        address2: billingAddress.address2,
-        city: billingAddress.city,
-        state: billingAddress.state,
-        postalCode: billingAddress.postalCode,
-        country: billingAddress.country,
-        phone: billingAddress.phone,
-        userId: userId,
-      },
-    });
-
-    // Create order
-    const order = await prisma.order.create({
-      data: {
-        userId: userId,
-        status: 'pending',
-        subtotal: orderSummary.subtotal,
-        tax: orderSummary.tax,
-        shipping: orderSummary.shipping,
-        total: orderSummary.total,
-        shippingAddressId: shippingAddressRecord.id,
-        billingAddressId: billingAddressRecord.id,
-      },
-    });
-
-    // Create order items and update inventory
+    // Look up Stripe price IDs for each product/payment type
+    const line_items = [];
     for (const item of items) {
-      await prisma.orderItem.create({
-        data: {
-          orderId: order.id,
-          productId: item.productId,
-          quantity: item.quantity,
-          price: item.price,
-        },
-      });
-
-      // Update product inventory
-      await prisma.product.update({
-        where: { id: item.productId },
-        data: {
-          stockQuantity: {
-            decrement: item.quantity,
-          },
-        },
-      });
-
-      // Log inventory change
-      await prisma.inventoryLog.create({
-        data: {
-          productId: item.productId,
-          type: 'out',
-          quantity: item.quantity,
-          reason: `Order ${order.id}`,
-        },
+      const product = await prisma.product.findUnique({ where: { id: item.productId } });
+      if (!product) throw new Error('Product not found');
+      let priceId = product.stripeOneTimePriceId;
+      if (item.paymentType === 'subscription') {
+        priceId = product.stripeSubscriptionPriceId;
+      }
+      if (!priceId) throw new Error('Stripe price ID not found');
+      line_items.push({
+        price: priceId,
+        quantity: item.quantity,
       });
     }
 
-    // Send order confirmation email
-    await sendOrderConfirmation(order.id);
-
-    return NextResponse.json({ 
-      orderId: order.id,
-      message: 'Order created successfully' 
+    // Create Stripe Checkout Session
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: line_items.some(li => {
+        // If any item is a subscription, use subscription mode
+        const prod = items.find((i: any) => i.productId === li.price);
+        return prod && prod.paymentType === 'subscription';
+      }) ? 'subscription' : 'payment',
+      line_items,
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/checkout`,
+      metadata: {
+        userId,
+        shippingAddress: JSON.stringify(shippingAddress),
+        billingAddress: JSON.stringify(billingAddress),
+        items: JSON.stringify(items),
+        orderSummary: JSON.stringify(orderSummary),
+      },
+      shipping_address_collection: {
+        allowed_countries: ['US'],
+      },
     });
+
+    return NextResponse.json({ url: session.url });
   } catch (error) {
-    console.error('Error creating order:', error);
-    return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
+    console.error('Error creating Stripe Checkout Session:', error);
+    return NextResponse.json({ error: 'Failed to create Stripe Checkout Session' }, { status: 500 });
   }
 }
 
