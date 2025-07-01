@@ -130,6 +130,12 @@ export default function AdminPage() {
             >
               Order Management
             </a>
+            <a 
+              href="/admin/users" 
+              className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              User Management
+            </a>
           </div>
         </div>
         

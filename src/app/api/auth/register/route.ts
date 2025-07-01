@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import { sendEmail, generateVerificationEmail } from '@/lib/email';
 
 const prisma = new PrismaClient();
 
@@ -26,6 +28,10 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
+    // Generate verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
     // Create user
     const user = await prisma.user.create({
       data: {
@@ -34,22 +40,21 @@ export async function POST(request: NextRequest) {
         email: email.toLowerCase(),
         phone,
         password: hashedPassword,
+        verificationToken,
+        verificationTokenExpiry,
       },
     });
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user.id, email: user.email },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '7d' }
-    );
+    // Send verification email
+    const emailData = generateVerificationEmail(email, verificationToken, firstName);
+    await sendEmail(emailData);
 
-    // Return user data (without password) and token
+    // Return user data (without password) and success message
     const { password: _, ...userWithoutPassword } = user;
     
     return NextResponse.json({
       user: userWithoutPassword,
-      token,
+      message: 'Registration successful! Please check your email to verify your account.',
     }, { status: 201 });
   } catch (error) {
     console.error('Registration error:', error);

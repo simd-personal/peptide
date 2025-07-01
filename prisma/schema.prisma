@@ -16,13 +16,33 @@ datasource db {
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
-  password      String
+  password      String?
   firstName     String?
   lastName      String?
   phone         String?
+  avatar        String?
+  role          String    @default("user") // user, admin
+  isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   emailVerified DateTime?
+  
+  // OAuth
+  googleId      String?   @unique
+  googleEmail   String?
+  
+  // 2FA
+  twoFactorSecret String?
+  twoFactorEnabled Boolean @default(false)
+  backupCodes    String? // JSON array of backup codes
+  
+  // Password reset
+  resetToken    String?
+  resetTokenExpiry DateTime?
+  
+  // Email verification
+  verificationToken String?
+  verificationTokenExpiry DateTime?
   
   // Addresses
   addresses     Address[]
