@@ -36,6 +36,7 @@ export default function QuizPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [peptides, setPeptides] = useState<Peptide[]>([]);
   const [recommendations, setRecommendations] = useState<Peptide[]>([]);
+  const [isNextLoading, setIsNextLoading] = useState(false);
   const [answers, setAnswers] = useState<QuizAnswers>({
     goals: [],
     age: 0,
@@ -72,17 +73,23 @@ export default function QuizPage() {
     setAnswers(prev => ({ ...prev, [field]: value }));
   };
 
-  const nextStep = () => {
+  const nextStep = async () => {
     if (currentStep === 1 && answers.goals.length === 0) return;
     if (currentStep === 2 && (!answers.age || !answers.weight)) return;
     if (currentStep === 3 && !answers.gender) return;
     if (currentStep === 4 && !answers.injectionExperience) return;
+    
+    setIsNextLoading(true);
+    
+    // Add a small delay for visual feedback
+    await new Promise(resolve => setTimeout(resolve, 300));
     
     if (currentStep === 4) {
       generateRecommendations();
     }
     
     setCurrentStep(prev => prev + 1);
+    setIsNextLoading(false);
   };
 
   const prevStep = () => {
@@ -339,10 +346,24 @@ export default function QuizPage() {
             </button>
             <button
               onClick={nextStep}
-              className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              disabled={isNextLoading}
+              className={`flex items-center space-x-2 px-6 py-3 rounded-lg transition-all duration-200 transform ${
+                isNextLoading
+                  ? 'bg-blue-500 text-white scale-95 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700 hover:scale-105 active:scale-95'
+              }`}
             >
-              <span>{currentStep === 4 ? 'Get Recommendations' : 'Next'}</span>
-              <ArrowRight className="w-4 h-4" />
+              {isNextLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Processing...</span>
+                </>
+              ) : (
+                <>
+                  <span>{currentStep === 4 ? 'Get Recommendations' : 'Next'}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
           </div>
         )}
