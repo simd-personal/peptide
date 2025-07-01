@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { sendOrderConfirmation } from '../email/route';
+import jwt from 'jsonwebtoken';
 
 const prisma = new PrismaClient();
 
@@ -8,6 +9,19 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { items, shippingAddress, billingAddress, orderSummary } = body;
+
+    // Get user ID from token
+    let userId = 'guest';
+    const authHeader = request.headers.get('authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.substring(7);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as any;
+        userId = decoded.userId;
+      } catch (error) {
+        console.log('Invalid token, using guest user');
+      }
+    }
 
     // Create shipping address
     const shippingAddressRecord = await prisma.address.create({
@@ -23,7 +37,7 @@ export async function POST(request: NextRequest) {
         postalCode: shippingAddress.postalCode,
         country: shippingAddress.country,
         phone: shippingAddress.phone,
-        userId: 'guest', // For demo - in real app, use actual user ID
+        userId: userId,
       },
     });
 
@@ -41,14 +55,14 @@ export async function POST(request: NextRequest) {
         postalCode: billingAddress.postalCode,
         country: billingAddress.country,
         phone: billingAddress.phone,
-        userId: 'guest', // For demo - in real app, use actual user ID
+        userId: userId,
       },
     });
 
     // Create order
     const order = await prisma.order.create({
       data: {
-        userId: 'guest', // For demo - in real app, use actual user ID
+        userId: userId,
         status: 'pending',
         subtotal: orderSummary.subtotal,
         tax: orderSummary.tax,

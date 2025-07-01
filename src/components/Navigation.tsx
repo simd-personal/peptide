@@ -1,13 +1,31 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { ShoppingCart } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { ShoppingCart, User, LogOut } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 
 export default function Navigation() {
   const pathname = usePathname();
+  const router = useRouter();
   const { toggleCart, getTotalItems } = useCart();
+  const [user, setUser] = useState<any>(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    setUser(null);
+    router.push('/');
+  };
 
   const isActive = (path: string) => pathname === path;
 
@@ -67,18 +85,58 @@ export default function Navigation() {
             </nav>
           </div>
 
-          <button
-            onClick={toggleCart}
-            className="relative flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <ShoppingCart className="w-5 h-5" />
-            <span className="hidden sm:inline">Cart</span>
-            {getTotalItems() > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {getTotalItems()}
-              </span>
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={toggleCart}
+              className="relative flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              <span className="hidden sm:inline">Cart</span>
+              {getTotalItems() > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {getTotalItems()}
+                </span>
+              )}
+            </button>
+
+            {user ? (
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center space-x-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  <User className="w-5 h-5" />
+                  <span className="hidden sm:inline">{user.firstName}</span>
+                </button>
+                
+                {showUserMenu && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                    <Link
+                      href="/account"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      My Account
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link
+                href="/auth/login"
+                className="flex items-center space-x-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                <User className="w-5 h-5" />
+                <span className="hidden sm:inline">Sign In</span>
+              </Link>
             )}
-          </button>
+          </div>
         </div>
       </div>
     </header>

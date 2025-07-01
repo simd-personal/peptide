@@ -29,7 +29,8 @@ interface OrderSummary {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, clearCart } = useCart();
+  const { state, clearCart } = useCart();
+  const { items } = state;
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [shippingAddress, setShippingAddress] = useState<Address>({
@@ -66,7 +67,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    const subtotal = items.reduce((sum, item) => sum + (item.peptide.price * item.quantity), 0);
+    const subtotal = items.reduce((sum: number, item: any) => sum + (item.peptide.price * item.quantity), 0);
     const tax = subtotal * 0.08; // 8% tax
     const shipping = subtotal > 100 ? 0 : 9.99; // Free shipping over $100
     const total = subtotal + tax + shipping;
@@ -106,10 +107,17 @@ export default function CheckoutPage() {
     setLoading(true);
     
     try {
+      // Get auth token if user is logged in
+      const token = localStorage.getItem('token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       // Create order in database
       const orderResponse = await fetch('/api/orders', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           items: items.map(item => ({
             productId: item.peptide.id,
@@ -468,7 +476,7 @@ export default function CheckoutPage() {
               <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
               
               <div className="space-y-3 mb-4">
-                {items.map((item: CartItem) => (
+                {items.map((item: any) => (
                   <div key={item.peptide.id} className="flex justify-between items-center">
                     <div>
                       <p className="font-medium">{item.peptide.name}</p>
