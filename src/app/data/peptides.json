@@ -1,0 +1,66 @@
+[
+  {
+    "id": "bpc157",
+    "name": "BPC-157",
+    "use_case": "Healing & Recovery",
+    "injection_site": "Subcutaneous or Intramuscular near injury site",
+    "description": "A synthetic peptide shown to accelerate healing of muscles, tendons, and ligaments.",
+    "tags": ["healing", "recovery", "injury"]
+  },
+  {
+    "id": "cjc-ipam",
+    "name": "CJC-1295 + Ipamorelin",
+    "use_case": "Growth Hormone / Muscle",
+    "injection_site": "Subcutaneous in abdominal fat",
+    "description": "Combo therapy to increase natural growth hormone secretion.",
+    "tags": ["muscle", "gh", "anti-aging"]
+  },
+  {
+    "id": "semaglutide",
+    "name": "Semaglutide",
+    "use_case": "Weight Loss",
+    "injection_site": "Subcutaneous in abdomen",
+    "description": "FDA-approved GLP-1 agonist for weight management. Weekly dosing.",
+    "tags": ["fat loss", "weight loss"]
+  },
+  {
+    "id": "pt141",
+    "name": "PT-141",
+    "use_case": "Libido Enhancement",
+    "injection_site": "Subcutaneous in abdomen",
+    "description": "Peptide that enhances libido and sexual function in both men and women.",
+    "tags": ["libido", "sexual health", "performance"]
+  },
+  {
+    "id": "ghrp2",
+    "name": "GHRP-2",
+    "use_case": "Growth Hormone / Appetite",
+    "injection_site": "Subcutaneous in abdomen",
+    "description": "Growth hormone releasing peptide that also increases appetite and muscle growth.",
+    "tags": ["muscle", "gh", "appetite", "growth"]
+  },
+  {
+    "id": "tb500",
+    "name": "TB-500",
+    "use_case": "Healing & Recovery",
+    "injection_site": "Subcutaneous in abdomen",
+    "description": "Synthetic version of thymosin beta-4, promotes healing and tissue regeneration.",
+    "tags": ["healing", "recovery", "injury", "regeneration"]
+  },
+  {
+    "id": "ipamorelin",
+    "name": "Ipamorelin",
+    "use_case": "Growth Hormone",
+    "injection_site": "Subcutaneous in abdomen",
+    "description": "Selective growth hormone secretagogue with minimal side effects.",
+    "tags": ["gh", "anti-aging", "muscle", "recovery"]
+  },
+  {
+    "id": "melanotan2",
+    "name": "Melanotan II",
+    "use_case": "Tanning & Libido",
+    "injection_site": "Subcutaneous in abdomen",
+    "description": "Synthetic peptide that stimulates melanin production and enhances libido.",
+    "tags": ["tanning", "libido", "sexual health"]
+  }
+] 
