@@ -23,6 +23,7 @@ export interface QuizAnswers {
   gender: string;
   injectionExperience: string;
   healthConditions: string[];
+  acknowledgedSideEffects: boolean;
 }
 
 export interface ChatMessage {

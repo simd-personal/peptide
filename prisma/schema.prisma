@@ -1,0 +1,173 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  firstName     String?
+  lastName      String?
+  phone         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  emailVerified DateTime?
+  
+  // Addresses
+  addresses     Address[]
+  
+  // Orders
+  orders        Order[]
+  
+  // Quiz preferences
+  quizResults   QuizResult[]
+  
+  // Cart items
+  cartItems     CartItem[]
+}
+
+model Address {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   // "shipping" or "billing"
+  firstName   String
+  lastName    String
+  company     String?
+  address1    String
+  address2    String?
+  city        String
+  state       String
+  postalCode  String
+  country     String   @default("US")
+  phone       String?
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shippingOrders Order[] @relation("ShippingAddress")
+  billingOrders  Order[] @relation("BillingAddress")
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  name          String
+  useCase       String
+  injectionSite String
+  description   String
+  tags          String   // JSON array as string
+  price         Float
+  dosage        String
+  cycleLength   String
+  image         String?
+  stockQuantity Int      @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  orderItems    OrderItem[]
+  cartItems     CartItem[]
+  inventoryLogs InventoryLog[]
+}
+
+model Order {
+  id              String        @id @default(cuid())
+  userId          String
+  status          String        @default("pending") // pending, paid, shipped, delivered, cancelled
+  subtotal        Float
+  tax             Float
+  shipping        Float
+  total           Float
+  stripePaymentId String?
+  trackingNumber  String?
+  shippingCarrier String?
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  // Relations
+  user            User          @relation(fields: [userId], references: [id])
+  shippingAddress Address       @relation("ShippingAddress", fields: [shippingAddressId], references: [id])
+  shippingAddressId String
+  billingAddress  Address       @relation("BillingAddress", fields: [billingAddressId], references: [id])
+  billingAddressId String
+  items           OrderItem[]
+  emails          EmailLog[]
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Float
+  createdAt DateTime @default(now())
+  
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id])
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id])
+}
+
+model QuizResult {
+  id                    String   @id @default(cuid())
+  userId                String
+  goals                 String   // JSON array as string
+  age                   Int
+  weight                Int
+  gender                String
+  injectionExperience   String
+  healthConditions      String   // JSON array as string
+  acknowledgedSideEffects Boolean
+  recommendations       String   // JSON array of product IDs
+  createdAt             DateTime @default(now())
+  
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model InventoryLog {
+  id          String   @id @default(cuid())
+  productId   String
+  type        String   // "in", "out", "adjustment"
+  quantity    Int
+  reason      String?
+  createdAt   DateTime @default(now())
+  
+  product     Product  @relation(fields: [productId], references: [id])
+}
+
+model EmailLog {
+  id        String   @id @default(cuid())
+  orderId   String?
+  userId    String?
+  type      String   // "order_confirmation", "shipping_update", "abandoned_cart", "educational"
+  subject   String
+  content   String
+  status    String   @default("pending") // pending, sent, failed
+  sentAt    DateTime?
+  createdAt DateTime @default(now())
+  
+  order     Order?   @relation(fields: [orderId], references: [id])
+}

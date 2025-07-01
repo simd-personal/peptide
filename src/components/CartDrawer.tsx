@@ -2,8 +2,10 @@
 
 import { useCart } from '@/contexts/CartContext';
 import { X, Plus, Minus, ShoppingCart } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function CartDrawer() {
+  const router = useRouter();
   const { state, removeItem, updateQuantity, closeCart, getTotalPrice } = useCart();
 
   if (!state.isOpen) return null;
@@ -82,7 +84,13 @@ export default function CartDrawer() {
                 <span className="text-lg font-semibold text-gray-900">Total:</span>
                 <span className="text-2xl font-bold text-gray-900">${getTotalPrice().toFixed(2)}</span>
               </div>
-              <button className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+              <button 
+                onClick={() => {
+                  closeCart();
+                  router.push('/checkout');
+                }}
+                className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+              >
                 Proceed to Checkout
               </button>
             </div>

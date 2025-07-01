@@ -54,6 +54,16 @@ export default function Navigation() {
               >
                 Quiz
               </Link>
+              <Link
+                href="/legal"
+                className={`text-sm font-medium transition-colors ${
+                  isActive('/legal') 
+                    ? 'text-blue-600' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Legal
+              </Link>
             </nav>
           </div>
 

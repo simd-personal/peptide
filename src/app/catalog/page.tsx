@@ -33,10 +33,23 @@ export default function CatalogPage() {
   useEffect(() => {
     const loadPeptides = async () => {
       try {
-        const response = await fetch('/data/peptides.json');
+        const response = await fetch('/api/products');
         const data = await response.json();
-        setPeptides(data);
-        setFilteredPeptides(data);
+        // Map DB fields to Peptide type for compatibility
+        const peptides = data.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          use_case: p.useCase,
+          injection_site: p.injectionSite,
+          description: p.description,
+          tags: Array.isArray(p.tags) ? p.tags : JSON.parse(p.tags),
+          price: p.price,
+          dosage: p.dosage,
+          cycle_length: p.cycleLength,
+          image: p.image,
+        }));
+        setPeptides(peptides);
+        setFilteredPeptides(peptides);
       } catch (error) {
         console.error('Error loading peptides:', error);
       } finally {

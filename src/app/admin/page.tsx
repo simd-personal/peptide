@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { Peptide } from '@/types';
 import Image from 'next/image';
 
-const ADMIN_PASSWORD = 'peptideadmin'; // Change this to your own password
+// Admin authentication - use environment variable or fallback to development password
+const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'peptideadmin2024!';
 
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false);
@@ -111,6 +112,27 @@ export default function AdminPage() {
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-5xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">Peptide Admin Dashboard</h1>
+        
+        {/* Navigation to new product management */}
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h2 className="text-lg font-semibold text-blue-900 mb-2">New Product Management System</h2>
+          <p className="text-blue-700 mb-3">Use the new database-powered product management system for real-time updates.</p>
+          <div className="flex gap-3">
+            <a 
+              href="/admin/products" 
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Product Management
+            </a>
+            <a 
+              href="/admin/orders" 
+              className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              Order Management
+            </a>
+          </div>
+        </div>
+        
         <div className="mb-8 flex justify-between items-center">
           <span className="text-lg font-semibold">Total Peptides: {peptides.length}</span>
           <button onClick={handleAddNew} className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700">Add New Peptide</button>

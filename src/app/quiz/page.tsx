@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Peptide, QuizAnswers } from '@/types';
 import { useCart } from '@/contexts/CartContext';
-import { ArrowLeft, ArrowRight, Check, Plus } from 'lucide-react';
-import ChatAssistant from '@/components/ChatAssistant';
+import { ArrowLeft, ArrowRight, Check, Plus, AlertTriangle } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 
 const GOALS = [
@@ -30,6 +29,16 @@ const EXPERIENCE_LEVELS = [
   { id: 'advanced', label: 'Advanced (1+ years)' },
 ];
 
+const SIDE_EFFECTS = [
+  { id: 'injection_site', label: 'Injection site reactions (redness, swelling, pain)', severity: 'Common' },
+  { id: 'headache', label: 'Headaches', severity: 'Common' },
+  { id: 'nausea', label: 'Nausea or stomach upset', severity: 'Common' },
+  { id: 'fatigue', label: 'Fatigue or tiredness', severity: 'Common' },
+  { id: 'water_retention', label: 'Water retention', severity: 'Common' },
+  { id: 'allergic', label: 'Allergic reactions', severity: 'Rare but serious' },
+  { id: 'blood_sugar', label: 'Blood sugar changes', severity: 'Monitor closely' },
+];
+
 export default function QuizPage() {
   const router = useRouter();
   const { addItem } = useCart();
@@ -44,6 +53,7 @@ export default function QuizPage() {
     gender: '',
     injectionExperience: '',
     healthConditions: [],
+    acknowledgedSideEffects: false,
   });
 
   useEffect(() => {
@@ -60,6 +70,40 @@ export default function QuizPage() {
     loadPeptides();
   }, []);
 
+  // Load saved progress from localStorage
+  useEffect(() => {
+    const savedProgress = localStorage.getItem('quizProgress');
+    if (savedProgress) {
+      try {
+        const { currentStep: savedStep, answers: savedAnswers } = JSON.parse(savedProgress);
+        // Only restore if we're not on the final step (recommendations)
+        if (savedStep < 6) {
+          setCurrentStep(savedStep);
+          setAnswers(savedAnswers);
+        } else {
+          // If we were on the final step, clear the progress
+          localStorage.removeItem('quizProgress');
+        }
+      } catch (error) {
+        console.error('Error loading saved progress:', error);
+        localStorage.removeItem('quizProgress');
+      }
+    }
+  }, []);
+
+  // Save progress to localStorage whenever answers or step changes
+  useEffect(() => {
+    if (currentStep > 1 || Object.keys(answers).some(key => {
+      const value = answers[key as keyof QuizAnswers];
+      if (Array.isArray(value)) {
+        return value.length > 0;
+      }
+      return value && value !== 0;
+    })) {
+      localStorage.setItem('quizProgress', JSON.stringify({ currentStep, answers }));
+    }
+  }, [currentStep, answers]);
+
   const handleGoalToggle = (goalId: string) => {
     setAnswers(prev => ({
       ...prev,
@@ -69,7 +113,7 @@ export default function QuizPage() {
     }));
   };
 
-  const handleInputChange = (field: keyof QuizAnswers, value: string | number | string[]) => {
+  const handleInputChange = (field: keyof QuizAnswers, value: string | number | string[] | boolean) => {
     setAnswers(prev => ({ ...prev, [field]: value }));
   };
 
@@ -78,13 +122,14 @@ export default function QuizPage() {
     if (currentStep === 2 && (!answers.age || !answers.weight)) return;
     if (currentStep === 3 && !answers.gender) return;
     if (currentStep === 4 && !answers.injectionExperience) return;
+    if (currentStep === 5 && !answers.acknowledgedSideEffects) return;
     
     setIsNextLoading(true);
     
     // Add a small delay for visual feedback
     await new Promise(resolve => setTimeout(resolve, 300));
     
-    if (currentStep === 4) {
+    if (currentStep === 5) {
       generateRecommendations();
     }
     
@@ -95,6 +140,30 @@ export default function QuizPage() {
   const prevStep = () => {
     setCurrentStep(prev => Math.max(1, prev - 1));
   };
+
+  const resetQuiz = () => {
+    setCurrentStep(1);
+    setAnswers({
+      goals: [],
+      age: 0,
+      weight: 0,
+      gender: '',
+      injectionExperience: '',
+      healthConditions: [],
+      acknowledgedSideEffects: false,
+    });
+    localStorage.removeItem('quizProgress');
+    console.log('Quiz reset successfully');
+  };
+
+  // Add this to window for debugging
+  if (typeof window !== 'undefined') {
+    (window as any).clearQuizProgress = () => {
+      localStorage.removeItem('quizProgress');
+      console.log('Quiz progress cleared from localStorage');
+      window.location.reload();
+    };
+  }
 
   const generateRecommendations = () => {
     const goalTags = answers.goals.map(goal => {
@@ -250,6 +319,60 @@ export default function QuizPage() {
       case 5:
         return (
           <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-black mb-4">Safety & Side Effects Education</h2>
+            <div className="p-6 bg-red-50 border border-red-200 rounded-lg mb-6">
+              <div className="flex items-start space-x-3">
+                <AlertTriangle className="w-6 h-6 text-red-600 mt-1 flex-shrink-0" />
+                <div>
+                  <h3 className="text-lg font-semibold text-red-800 mb-3">Important Safety Information</h3>
+                  <p className="text-red-700 mb-4">
+                    Peptides can have side effects. It's crucial to understand these before starting any peptide therapy. 
+                    Always consult with a healthcare professional before use.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-black">Common Side Effects:</h3>
+              {SIDE_EFFECTS.map((effect) => (
+                <div key={effect.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                  <div className="flex-1">
+                    <p className="font-medium text-black">{effect.label}</p>
+                    <span className={`text-sm px-2 py-1 rounded-full ${
+                      effect.severity === 'Common' ? 'bg-yellow-100 text-yellow-800' :
+                      effect.severity === 'Rare but serious' ? 'bg-red-100 text-red-800' :
+                      'bg-blue-100 text-blue-800'
+                    }`}>
+                      {effect.severity}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start space-x-3">
+                <input
+                  type="checkbox"
+                  id="acknowledge-side-effects"
+                  checked={answers.acknowledgedSideEffects}
+                  onChange={(e) => handleInputChange('acknowledgedSideEffects', e.target.checked)}
+                  className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <label htmlFor="acknowledge-side-effects" className="text-sm text-blue-800">
+                  I acknowledge that I have read and understand the potential side effects of peptide therapy. 
+                  I understand that I should consult with a healthcare professional before use and discontinue 
+                  use if I experience any adverse effects.
+                </label>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 6:
+        return (
+          <div className="space-y-6">
             <h2 className="text-2xl font-bold text-black mb-4">Your Personalized Recommendations</h2>
             <p className="text-base text-black mb-6">
               Based on your goals and profile, here are our top recommendations:
@@ -313,16 +436,16 @@ export default function QuizPage() {
           <div className="py-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-700">
-                Step {currentStep} of 5
+                Step {currentStep} of 6
               </span>
               <span className="text-sm text-gray-500">
-                {Math.round((currentStep / 5) * 100)}% Complete
+                {Math.round((currentStep / 6) * 100)}% Complete
               </span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div
                 className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${(currentStep / 5) * 100}%` }}
+                style={{ width: `${(currentStep / 6) * 100}%` }}
               />
             </div>
           </div>
@@ -334,16 +457,25 @@ export default function QuizPage() {
         {renderStep()}
 
         {/* Navigation */}
-        {currentStep < 5 && (
+        {currentStep < 6 && (
           <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
-            <button
-              onClick={prevStep}
-              disabled={currentStep === 1}
-              className="flex items-center space-x-2 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Previous</span>
-            </button>
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={prevStep}
+                disabled={currentStep === 1}
+                className="flex items-center space-x-2 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Previous</span>
+              </button>
+              <button
+                onClick={resetQuiz}
+                className="px-4 py-3 text-sm text-gray-500 hover:text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                title="Reset quiz and start over"
+              >
+                Reset Quiz
+              </button>
+            </div>
             <button
               onClick={nextStep}
               disabled={isNextLoading}
@@ -360,7 +492,7 @@ export default function QuizPage() {
                 </>
               ) : (
                 <>
-                  <span>{currentStep === 4 ? 'Get Recommendations' : 'Next'}</span>
+                  <span>{currentStep === 5 ? 'Get Recommendations' : 'Next'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -369,8 +501,6 @@ export default function QuizPage() {
         )}
       </main>
 
-      {/* Chat Assistant */}
-      <ChatAssistant />
     </div>
   );
 } 
